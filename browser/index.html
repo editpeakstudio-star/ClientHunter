@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Client Hunter</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090a0e;color:#fff;font-family:Arial,sans-serif}
+button,input,select,textarea{font:inherit}
+.header{padding:18px 16px}
+.header h1{margin:0;font-size:23px}
+.header p{margin:5px 0;color:#777;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 10px}
+.stat{background:#12141a;border:1px solid #252933;border-radius:12px;text-align:center;padding:10px}
+.stat b{display:block;font-size:19px}.stat span{font-size:10px;color:#777}
+.search{padding:5px 16px 12px}
+.search input{width:100%;padding:13px;border-radius:11px;border:1px solid #292d36;background:#12141a;color:#fff;outline:none}
+.list{padding:0 16px 90px}
+.client{height:52px;display:flex;align-items:center;gap:9px;padding:0 11px;margin-bottom:7px;background:#12141a;border:1px solid #252933;border-radius:11px}
+.client:active{transform:scale(.98)}
+.id{font-size:10px;color:#00d9ff;min-width:65px}
+.name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.temp{font-size:9px;color:#aaa;background:#1b1e26;padding:5px 7px;border-radius:7px}
+.empty{text-align:center;color:#666;padding:45px 10px}
+.bottom{position:fixed;bottom:0;left:0;right:0;padding:10px 16px;background:#090a0ef5;border-top:1px solid #242731}
+.add{width:100%;padding:14px;border:0;border-radius:11px;background:#00d9ff;color:#000;font-weight:bold}
+
+.detail{display:none;padding:16px 16px 40px}
+.detail.show{display:block}
+.home.hide{display:none}
+.back{padding:9px 13px;border-radius:9px;background:#12141a;color:#fff;border:1px solid #292d36;margin-bottom:12px}
+.head{background:#12141a;border:1px solid #252933;border-radius:13px;padding:14px;margin-bottom:10px}
+.head h2{margin:0 0 4px;font-size:20px}.head small{color:#777}
+.fields{display:grid;gap:8px}
+.field{background:#12141a;border:1px solid #252933;border-radius:10px;padding:10px}
+.field label{display:block;color:#777;font-size:10px;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;background:transparent;border:0;outline:0;color:#fff}
+.field textarea{min-height:65px;resize:vertical}
+.title{color:#777;font-size:11px;margin:17px 0 7px}
+.status{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.status button,.action{padding:12px 7px;border-radius:10px;border:1px solid #30343e;background:#171a21;color:#ccc;font-weight:bold}
+.status button.active{background:#e53935;border-color:#ff625e;color:#fff}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}
+.action.primary{background:#00d9ff;color:#000;border-color:#00d9ff}
+.action.call{background:#17251b}
+.action.delete{background:#271313;color:#ff7777}
+.reminder{background:#111820;border:1px solid #26343d;border-radius:10px;padding:10px;color:#8d9ca5;font-size:11px;margin-top:10px}
+.modal{display:none;position:fixed;inset:0;background:#000b;z-index:50;align-items:flex-end}
+.modal.show{display:flex}
+.sheet{width:100%;max-height:92vh;overflow:auto;background:#0d0f14;border-radius:18px 18px 0 0;padding:18px 16px 30px}
+.sheet h2{margin-top:0}
+
+
+.todayBox{margin:0 16px 12px;background:#111820;border:1px solid #26343d;border-radius:12px;padding:11px}
+.todayHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.todayHead b{font-size:13px}
+.todayCount{font-size:10px;color:#00d9ff;background:#10242a;padding:4px 7px;border-radius:6px}
+.todayItem{display:flex;align-items:center;gap:9px;padding:9px 8px;background:#151920;border:1px solid #252a33;border-radius:9px;margin-top:6px;cursor:pointer}
+.todayItem:active{transform:scale(.98)}
+.todayItem .todayId{font-size:9px;color:#00d9ff;min-width:52px}
+.todayItem .todayName{flex:1;min-width:0;font-size:12px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.todayItem .todayStep{font-size:9px;color:#ff7777}
+.todayEmpty{font-size:10px;color:#666;padding:5px 2px}
+</style>
+</head>
+
+<body>
+
+<div id="home" class="home">
+<div class="header">
+<h1>Client Hunter</h1>
+<p>Simple Client Hunting CRM</p>
+</div>
+
+<div class="stats">
+<div class="stat"><b id="total">0</b><span>Total</span></div>
+<div class="stat"><b id="dmCount">0</b><span>DM Sent</span></div>
+<div class="stat"><b id="replyCount">0</b><span>Replies</span></div>
+</div>
+
+<div class="search">
+<input id="search" placeholder="Search client..." oninput="render()">
+</div>
+
+
+
+<div id="todayFollowups" class="todayBox"></div>
+
+<div id="list" class="list"></div>
+
+<div class="bottom">
+<button class="add" onclick="openAdd()">＋ Add Client</button>
+</div>
+</div>
+
+<div id="detail" class="detail">
+
+<button class="back" onclick="closeDetail()">← Back</button>
+
+<div class="head">
+<h2 id="detailTitle">Client</h2>
+<small id="detailId"></small>
+</div>
+
+<div class="fields">
+<div class="field"><label>Instagram Profile</label><input id="fInstagram"></div>
+<div class="field"><label>Name</label><input id="fName"></div>
+<div class="field"><label>Username</label><input id="fUsername"></div>
+<div class="field"><label>Followers</label><input id="fFollowers" type="number"></div>
+<div class="field"><label>Country</label><input id="fCountry"></div>
+<div class="field"><label>Niche</label><input id="fNiche"></div>
+<div class="field"><label>Public Email</label><input id="fEmail"></div>
+<div class="field"><label>Phone / WhatsApp Number</label><input id="fPhone"></div>
+<div class="field"><label>Content Type</label><input id="fContent"></div>
+<div class="field"><label>Temperature</label>
+<select id="fTemp"><option>Hot</option><option>Warm</option><option>Cold</option></select>
+</div>
+<div class="field"><label>First DM Date</label><input id="fDate" type="date"></div>
+<div class="field"><label>Deal Value</label><input id="fDeal"></div>
+<div class="field"><label>Notes</label><textarea id="fNotes"></textarea></div>
+</div>
+
+<div class="title">Status</div>
+
+<div class="status">
+<button id="dm" onclick="toggleStatus('dmSent')">DM Sent</button>
+<button id="follow" onclick="toggleFollow()">Follow-up</button>
+<button id="reply" onclick="toggleStatus('replied')">Replied</button>
+<button id="negotiating" onclick="toggleStatus('negotiating')">Negotiating</button>
+<button id="won" onclick="toggleStatus('won')">Won</button>
+<button id="lost" onclick="toggleStatus('lost')">Lost</button>
+</div>
+
+<div id="reminder" class="reminder">Follow-up reminders: OFF</div>
+
+<div class="actions">
+<button class="action" onclick="openInstagram()">Instagram</button>
+<button class="action call" onclick="callNumber()">📞 Call</button>
+<button class="action" onclick="openWhatsApp()">WhatsApp</button>
+<button class="action" onclick="showDetails()">Details</button>
+<button class="action primary" onclick="saveClient()">Save Changes</button>
+<button class="action delete" onclick="deleteClient()">Delete</button>
+</div>
+
+</div>
+
+<div id="modal" class="modal">
+<div class="sheet">
+<h2>Add Client</h2>
+
+<div class="fields">
+<div class="field"><label>Instagram Profile</label><input id="aInstagram"></div>
+<div class="field"><label>Name</label><input id="aName"></div>
+<div class="field"><label>Username</label><input id="aUsername"></div>
+<div class="field"><label>Followers</label><input id="aFollowers" type="number"></div>
+<div class="field"><label>Country</label><input id="aCountry"></div>
+<div class="field"><label>Niche</label><input id="aNiche"></div>
+<div class="field"><label>Public Email</label><input id="aEmail"></div>
+<div class="field"><label>Phone / WhatsApp</label><input id="aPhone"></div>
+<div class="field"><label>Content Type</label><input id="aContent"></div>
+<div class="field"><label>Temperature</label>
+<select id="aTemp"><option>Hot</option><option selected>Warm</option><option>Cold</option></select>
+</div>
+<div class="field"><label>First DM Date</label><input id="aDate" type="date"></div>
+<div class="field"><label>Deal Value</label><input id="aDeal"></div>
+<div class="field"><label>Notes</label><textarea id="aNotes"></textarea></div>
+</div>
+
+<div class="actions">
+<button class="action" onclick="closeAdd()">Cancel</button>
+<button class="action primary" onclick="addClient()">Save Client</button>
+</div>
+</div>
+</div>
+
+<script>
+let clients=JSON.parse(localStorage.getItem("clientHunterClients")||"[]");
+let current=-1;
+
+function db(){localStorage.setItem("clientHunterClients",JSON.stringify(clients))}
+function val(id){return document.getElementById(id).value.trim()}
+function setv(id,v){document.getElementById(id).value=v||""}
+
+clients.forEach(c=>{
+c.dmSent=!!c.dmSent;c.followUp=!!c.followUp;c.replied=!!c.replied;
+c.negotiating=!!c.negotiating;c.won=!!c.won;c.lost=!!c.lost;
+});
+
+function nextId(){
+let max=0;
+clients.forEach(c=>{
+let n=parseInt(String(c.id||"").replace("CLIENT-",""),10);
+if(!isNaN(n)&&n>max)max=n;
+});
+return "CLIENT-"+String(max+1).padStart(2,"0");
+}
+
+
+function renderTodayFollowups(){
+let box=document.getElementById("todayFollowups");
+if(!box)return;
+
+let now=Date.now();
+let end=now+86400000;
+
+let due=[];
+
+clients.forEach((c,i)=>{
+if(!c.followUp)return;
+
+let reminders=[
+  {time:c.reminder1,step:"Follow-up 1"},
+  {time:c.reminder2,step:"Follow-up 2"},
+  {time:c.reminder3,step:"Follow-up 3"}
+];
+
+reminders.forEach(r=>{
+if(r.time && r.time>=now && r.time<=end){
+due.push({client:c,index:i,step:r.step,time:r.time});
+}
+});
+});
+
+due.sort((a,b)=>a.time-b.time);
+
+if(!due.length){
+box.innerHTML=`
+<div class="todayHead">
+<b>📅 Today's Follow-ups</b>
+<span class="todayCount">0</span>
+</div>
+<div class="todayEmpty">No follow-ups due today.</div>`;
+return;
+}
+
+box.innerHTML=`
+<div class="todayHead">
+<b>📅 Today's Follow-ups</b>
+<span class="todayCount">${due.length}</span>
+</div>
+${due.map(x=>`
+<div class="todayItem" onclick="openClient(${x.index})">
+<span class="todayId">${safe(x.client.id)}</span>
+<span class="todayName">${safe(x.client.name||"Unnamed")}</span>
+<span class="todayStep">${x.step}</span>
+</div>
+`).join("")}`;
+}
+
+function render(){
+renderTodayFollowups();
+let q=val("search").toLowerCase();
+let data=clients.filter(c=>
+(c.name||"").toLowerCase().includes(q)||
+(c.username||"").toLowerCase().includes(q)||
+(c.niche||"").toLowerCase().includes(q));
+
+document.getElementById("total").textContent=clients.length;
+document.getElementById("dmCount").textContent=clients.filter(c=>c.dmSent).length;
+document.getElementById("replyCount").textContent=clients.filter(c=>c.replied).length;
+
+const dmClients = clients.filter(c => c.dmSent);
+if(document.getElementById("dmSentTotal")) document.getElementById("dmSentTotal").textContent = dmClients.length;
+
+if(document.getElementById("dmSentList")) document.getElementById("dmSentList").innerHTML = dmClients.length
+? dmClients.map(c => {
+  const i = clients.indexOf(c);
+  return `<div class="client" onclick="openClient(${i})">
+    <span class="id">${c.id}</span>
+    <span class="name">${safe(c.name || "Unnamed")}</span>
+    <span class="temp">DM Sent</span>
+  </div>`;
+}).join("")
+: '<div style="color:#666;font-size:12px;padding:8px 0 15px">Abhi kisi client ko DM Sent mark nahi kiya.</div>';
+
+document.getElementById("list").innerHTML=data.length?data.map(c=>{
+let i=clients.indexOf(c);
+return `<div class="client" onclick="openClient(${i})">
+<span class="id">${c.id}</span>
+<span class="name">${safe(c.name||"Unnamed")}</span>
+<span class="temp">${safe(c.temp||"Warm")}</span>
+</div>`
+}).join(""):'<div class="empty">No clients found.</div>';
+}
+
+function openAdd(){document.getElementById("modal").classList.add("show")}
+function closeAdd(){document.getElementById("modal").classList.remove("show")}
+
+function addClient(){
+clients.unshift({
+id:nextId(),instagram:val("aInstagram"),name:val("aName"),
+username:val("aUsername"),followers:val("aFollowers"),
+country:val("aCountry"),niche:val("aNiche"),email:val("aEmail"),
+phone:val("aPhone"),content:val("aContent"),
+date:val("aDate"),deal:val("aDeal"),notes:val("aNotes"),
+dmSent:false,followUp:false,replied:false,negotiating:false,won:false,lost:false,
+followUpStarted:0,reminder1:0,reminder2:0,reminder3:0
+});
+db();closeAdd();render();openClient(0);
+}
+
+function openClient(i){
+current=i;
+let c=clients[i];
+document.getElementById("home").classList.add("hide");
+document.getElementById("detail").classList.add("show");
+
+document.getElementById("detailTitle").textContent=c.name||"Unnamed Client";
+document.getElementById("detailId").textContent=c.id;
+
+setv("fInstagram",c.instagram);setv("fName",c.name);
+setv("fUsername",c.username);setv("fFollowers",c.followers);
+setv("fCountry",c.country);setv("fNiche",c.niche);
+setv("fEmail",c.email);setv("fPhone",c.phone);
+setv("fContent",c.content);setv("fTemp",c.temp||"Warm");
+setv("fDate",c.date);setv("fDeal",c.deal);setv("fNotes",c.notes);
+
+buttons();reminderText();
+}
+
+function closeDetail(){
+document.getElementById("detail").classList.remove("show");
+document.getElementById("home").classList.remove("hide");
+current=-1;render();
+}
+
+function toggleStatus(type){
+if(current<0)return;
+clients[current][type]=!clients[current][type];
+db();buttons();reminderText();render();
+}
+
+function toggleFollow(){
+if(current<0)return;
+let c=clients[current];
+
+if(c.followUp){
+c.followUp=false;
+c.followUpStarted=0;c.reminder1=0;c.reminder2=0;c.reminder3=0;
+}else{
+let now=Date.now();
+c.followUp=true;
+c.followUpStarted=now;
+c.reminder1=now+2*86400000;
+c.reminder2=now+4*86400000;
+c.reminder3=now+6*86400000;
+c.reminder1Done=false;c.reminder2Done=false;c.reminder3Done=false;
+}
+
+db();buttons();reminderText();
+}
+
+function buttons(){
+if(current<0)return;
+let c=clients[current];
+setActive("dm",c.dmSent);
+setActive("follow",c.followUp);
+setActive("reply",c.replied);
+setActive("negotiating",c.negotiating);
+setActive("won",c.won);
+setActive("lost",c.lost);
+}
+
+function setActive(id,on){
+document.getElementById(id).classList.toggle("active",!!on)
+}
+
+function reminderText(){
+if(current<0)return;
+let c=clients[current],box=document.getElementById("reminder");
+
+if(!c.followUp){
+box.textContent="Follow-up reminders: OFF";
+return;
+}
+
+box.innerHTML="🔔 Follow-up ON — Reminder 1: 2 days • Reminder 2: 4 days • Reminder 3: 6 days";
+}
+
+function saveClient(){
+if(current<0)return;
+let c=clients[current];
+
+c.instagram=val("fInstagram");c.name=val("fName");
+c.username=val("fUsername");c.followers=val("fFollowers");
+c.country=val("fCountry");c.niche=val("fNiche");
+c.email=val("fEmail");c.phone=val("fPhone");
+c.content=val("fContent");c.temp=val("fTemp");
+c.date=val("fDate");c.deal=val("fDeal");c.notes=val("fNotes");
+
+db();
+document.getElementById("detailTitle").textContent=c.name||"Unnamed Client";
+render();
+alert("Client saved.");
+}
+
+function openInstagram(){
+if(current<0)return;
+let c=clients[current];
+let u=c.instagram||(c.username?"https://instagram.com/"+c.username.replace("@",""):"");
+if(!u){alert("Instagram link nahi hai.");return}
+if(!/^https?:\/\//i.test(u))u="https://"+u;
+window.open(u,"_blank");
+}
+
+function callNumber(){
+if(current<0)return;
+let n=(clients[current].phone||"").replace(/[^0-9+]/g,"");
+if(!n){alert("Phone number saved nahi hai.");return}
+window.location.href="tel:"+n;
+}
+
+function openWhatsApp(){
+if(current<0)return;
+let n=(clients[current].phone||"").replace(/\D/g,"");
+if(!n){alert("WhatsApp number saved nahi hai.");return}
+window.open("https://wa.me/"+n,"_blank");
+}
+
+function showDetails(){
+if(current<0)return;
+let c=clients[current];
+alert(
+"ID: "+c.id+
+"\nName: "+(c.name||"-")+
+"\nUsername: "+(c.username||"-")+
+"\nFollowers: "+(c.followers||"-")+
+"\nCountry: "+(c.country||"-")+
+"\nNiche: "+(c.niche||"-")+
+"\nEmail: "+(c.email||"-")+
+"\nPhone: "+(c.phone||"-")+
+"\nContent: "+(c.content||"-")+
+"\nTemperature: "+(c.temp||"-")+
+"\nDM Sent: "+(c.dmSent?"YES":"NO")+
+"\nFollow-up: "+(c.followUp?"YES":"NO")+
+"\nReplied: "+(c.replied?"YES":"NO")+
+"\nNegotiating: "+(c.negotiating?"YES":"NO")+
+"\nWon: "+(c.won?"YES":"NO")+
+"\nLost: "+(c.lost?"YES":"NO")+
+"\nDeal: "+(c.deal||"-")+
+"\nNotes: "+(c.notes||"-")
+);
+}
+
+function deleteClient(){
+if(current<0)return;
+if(!confirm("Delete this client?"))return;
+clients.splice(current,1);
+
+db();closeDetail();
+}
+
+function safe(x){
+return String(x).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+
+render();
+</script>
+</body>
+</html>
