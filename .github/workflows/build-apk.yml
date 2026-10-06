@@ -1,0 +1,36 @@
+name: Build Client Hunter APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'browser/index.html'
+      - 'apk-app/**'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Copy latest browser app
+        run: |
+          mkdir -p apk-app/app/src/main/assets
+          cp browser/index.html apk-app/app/src/main/assets/index.html
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        working-directory: apk-app
+        run: gradle assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClientHunter-APK
+          path: apk-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
